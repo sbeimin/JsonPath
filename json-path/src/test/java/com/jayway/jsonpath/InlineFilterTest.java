@@ -2,6 +2,7 @@ package com.jayway.jsonpath;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -74,5 +75,86 @@ public class InlineFilterTest extends BaseTest {
 
         List h = reader.read("$.store.book[?(@.display-price == 8.95 || @.display-price == 8.99 || (@.display-price == 22.99 && @.category == 'reference') )].author", List.class);
         assertThat(h).containsOnly("Nigel Rees", "Herman Melville");
+    }
+
+    @Test
+    public void no_path_ref_in_filter_hit_all() {
+
+        List<String> res = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?('a' == 'a')].author");
+
+        assertThat(res).containsExactly("Nigel Rees", "Evelyn Waugh", "Herman Melville", "J. R. R. Tolkien");
+
+    }
+
+    @Test
+    public void no_path_ref_in_filter_hit_none() {
+
+        List<String> res = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?('a' == 'b')].author");
+
+        assertThat(res).isEmpty();
+
+    }
+
+    @Test
+    public void path_can_be_on_either_side_of_operator() {
+        List<String> resLeft = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?(@.category == 'reference')].author");
+        List<String> resRight = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?('reference' == @.category)].author");
+
+        assertThat(resLeft).containsExactly("Nigel Rees");
+        assertThat(resRight).containsExactly("Nigel Rees");
+    }
+
+    @Test
+    public void path_can_be_on_both_side_of_operator() {
+        List<String> res = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?(@.category == @.category)].author");
+
+        assertThat(res).containsExactly("Nigel Rees", "Evelyn Waugh", "Herman Melville", "J. R. R. Tolkien");
+    }
+
+    @Test
+    public void patterns_can_be_evaluated() {
+        List<String> resLeft = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?(@.category =~ /reference/)].author");
+        assertThat(resLeft).containsExactly("Nigel Rees");
+
+        resLeft = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?(/reference/ =~ @.category)].author");
+        assertThat(resLeft).containsExactly("Nigel Rees");
+    }
+
+
+
+    @Test
+    public void patterns_can_be_evaluated_with_ignore_case() {
+        List<String> resLeft = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?(@.category =~ /REFERENCE/)].author");
+        assertThat(resLeft).isEmpty();
+
+        resLeft = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?(@.category =~ /REFERENCE/i)].author");
+        assertThat(resLeft).containsExactly("Nigel Rees");
+    }
+
+    @Test
+    public void negate_exists_check() {
+        List<String> hasIsbn = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?(@.isbn)].author");
+        assertThat(hasIsbn).containsExactly("Herman Melville", "J. R. R. Tolkien");
+
+        List<String> noIsbn = JsonPath.parse(JSON_DOCUMENT).read("$.store.book[?(!@.isbn)].author");
+
+        assertThat(noIsbn).containsExactly("Nigel Rees", "Evelyn Waugh");
+    }
+
+    @Test
+    public void negate_exists_check_primitive() {
+        List<Integer> ints = new ArrayList<Integer>();
+        ints.add(0);
+        ints.add(1);
+        ints.add(null);
+        ints.add(2);
+        ints.add(3);
+
+
+        List<Integer> notNull = JsonPath.parse(ints).read("$[?(@)]");
+        assertThat(notNull).containsExactly(0,1,2,3);
+
+        List<Integer> isNull = JsonPath.parse(ints).read("$[?(!@)]");
+        assertThat(isNull).containsExactly(new Integer[]{null});
     }
 }

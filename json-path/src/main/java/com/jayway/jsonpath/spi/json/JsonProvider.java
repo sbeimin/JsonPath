@@ -93,13 +93,32 @@ public interface JsonProvider {
     Collection<String> getPropertyKeys(Object obj);
 
     /**
-     * Extracts a value from an array
+     * Extracts a value from an array anw unwraps provider specific data type
      *
      * @param obj an array
      * @param idx index
      * @return the entry at the given index
      */
     Object getArrayIndex(Object obj, int idx);
+
+    /**
+     * Extracts a value from an array
+     *
+     * @param obj an array
+     * @param idx index
+     * @param unwrap should provider specific data type be unwrapped
+     * @return the entry at the given index
+     */
+    Object getArrayIndex(Object obj, int idx, boolean unwrap);
+
+    /**
+     * Sets a value in an array
+     *
+     * @param array an array
+     * @param idx index
+     * @param newValue the new value
+     */
+    void setArrayIndex(Object array, int idx, Object newValue);
 
     /**
      * Extracts a value from an map
@@ -118,6 +137,14 @@ public interface JsonProvider {
      * @param value the value to set
      */
     void setProperty(Object obj, Object key, Object value);
+
+    /**
+     * Removes a value in an object or array
+     *
+     * @param obj   an array or an object
+     * @param key   a String key or a numerical index to remove
+     */
+    void removeProperty(Object obj, Object key);
 
     /**
      * checks if object is a map (i.e. no array)

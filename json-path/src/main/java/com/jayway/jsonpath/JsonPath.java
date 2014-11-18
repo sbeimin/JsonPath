@@ -24,16 +24,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import com.jayway.jsonpath.internal.EvaluationContext;
 import com.jayway.jsonpath.internal.JsonReader;
 import com.jayway.jsonpath.internal.Path;
 import com.jayway.jsonpath.internal.PathCompiler;
+import com.jayway.jsonpath.internal.PathRef;
 import com.jayway.jsonpath.internal.Utils;
 import com.jayway.jsonpath.spi.http.HttpProviderFactory;
 import com.jayway.jsonpath.spi.json.JsonProvider;
@@ -182,7 +178,7 @@ public class JsonPath {
             if(optAsPathList){
                 return  (T)path.evaluate(jsonObject, jsonObject, configuration).getPath();
             } else {
-                Object res = path.evaluate(jsonObject, jsonObject, configuration).getValue();
+                Object res = path.evaluate(jsonObject, jsonObject, configuration).getValue(false);
                 if(optAlwaysReturnList && path.isDefinite()){
                     Object array = configuration.jsonProvider().createArray();
                     configuration.jsonProvider().setProperty(array, 0, res);
@@ -205,9 +201,83 @@ public class JsonPath {
                 return (T)(path.isDefinite() ? null : configuration.jsonProvider().createArray());
             }
         }
-
     }
 
+    /**
+     * Set the value this path points to in the provided jsonObject
+     *
+     * @param jsonObject    a json object
+     * @param configuration configuration to use
+     * @param <T>           expected return type
+     * @return the updated jsonObject
+     */
+    public <T> T set(Object jsonObject, Object newVal, Configuration configuration) {
+        notNull(jsonObject, "json can not be null");
+        notNull(configuration, "configuration can not be null");
+        EvaluationContext evaluationContext = path.evaluate(jsonObject, jsonObject, configuration, true);
+        for (PathRef updateOperation : evaluationContext.updateOperations()) {
+            updateOperation.set(newVal, configuration);
+        }
+        return (T)jsonObject;
+    }
+
+    /**
+     * Deletes the object this path points to in the provided jsonObject
+     *
+     * @param jsonObject    a json object
+     * @param configuration configuration to use
+     * @param <T>           expected return type
+     * @return the updated jsonObject
+     */
+    public <T> T delete(Object jsonObject, Configuration configuration) {
+        notNull(jsonObject, "json can not be null");
+        notNull(configuration, "configuration can not be null");
+        EvaluationContext evaluationContext = path.evaluate(jsonObject, jsonObject, configuration, true);
+        for (PathRef updateOperation : evaluationContext.updateOperations()) {
+            updateOperation.delete(configuration);
+        }
+        return (T)jsonObject;
+    }
+
+    /**
+     * Adds a new value to the Array this path points to in the provided jsonObject
+     *
+     * @param jsonObject    a json object
+     * @param value         the value to add
+     * @param configuration configuration to use
+     * @param <T>           expected return type
+     * @return the updated jsonObject
+     */
+    public <T> T add(Object jsonObject, Object value, Configuration configuration) {
+        notNull(jsonObject, "json can not be null");
+        notNull(configuration, "configuration can not be null");
+        EvaluationContext evaluationContext = path.evaluate(jsonObject, jsonObject, configuration, true);
+        for (PathRef updateOperation : evaluationContext.updateOperations()) {
+            updateOperation.add(value, configuration);
+        }
+        return (T)jsonObject;
+    }
+
+    /**
+     * Adds or updates the Object this path points to in the provided jsonObject with a key with a value
+     *
+     * @param jsonObject    a json object
+     * @param value         the key to add or update
+     * @param value         the new value
+     * @param configuration configuration to use
+     * @param <T>           expected return type
+     * @return the updated jsonObject
+     */
+    public <T> T put(Object jsonObject, String key, Object value, Configuration configuration) {
+        notNull(jsonObject, "json can not be null");
+        notEmpty(key, "key can not be null or empty");
+        notNull(configuration, "configuration can not be null");
+        EvaluationContext evaluationContext = path.evaluate(jsonObject, jsonObject, configuration, true);
+        for (PathRef updateOperation : evaluationContext.updateOperations()) {
+            updateOperation.put(key, value, configuration);
+        }
+        return (T)jsonObject;
+    }
 
     /**
      * Applies this JsonPath to the provided json string
@@ -461,20 +531,6 @@ public class JsonPath {
     }
 
     //-------------------------
-
-
-    /**
-     * Creates a new JsonPath and applies it to the provided Json object
-     *
-     * @param json     a json object
-     * @param jsonPath the json path
-     * @param filters  filters to be applied to the filter place holders  [?] in the path
-     * @return json object without elemens matched by given path
-     */
-    @SuppressWarnings("rawtypes")
-	public static Map remove(Object json, String jsonPath, Predicate... filters) {
-        return parse(json).remove(jsonPath, Map.class, filters);
-    }
     
     /**
      * Creates a new JsonPath and applies it to the provided Json object
@@ -484,8 +540,8 @@ public class JsonPath {
      * @param filters  filters to be applied to the filter place holders  [?] in the path
      * @return list of objects matched by the given path
      */
-    public static String remove(String json, String jsonPath, Predicate... filters) {
-        return parse(json).remove(jsonPath, String.class, filters);
+    public static <T> T delete(String json, String jsonPath, Predicate... filters) {
+        return parse(json).remove(jsonPath, filters);
     }
 
     /**
@@ -497,7 +553,7 @@ public class JsonPath {
      * @return list of objects matched by the given path
      */
     public static String remove(URL json, String jsonPath, Predicate... filters) throws IOException {
-        return parse(json).remove(jsonPath, String.class, filters);
+        return parse(json).remove(jsonPath, filters);
     }
 
     /**
@@ -509,9 +565,9 @@ public class JsonPath {
      * @return list of objects matched by the given path
      */
     public static String remove(File json, String jsonPath, Predicate... filters) throws IOException {
-        return parse(json).remove(jsonPath, String.class, filters);
+        return parse(json).remove(jsonPath, filters);
     }
-    
+
     // --------------------------------------------------------
     //
     // Static Fluent API
@@ -541,166 +597,111 @@ public class JsonPath {
 
     /**
      * Parses the given JSON input using the default {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json input
      * @return a read context
      */
-    public static ReadContext parse(Object json) {
+    public static DocumentContext parse(Object json) {
         return new JsonReader().parse(json);
     }
 
     /**
      * Parses the given JSON input using the default {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json string
      * @return a read context
      */
-    public static ReadContext parse(String json) {
+    public static DocumentContext parse(String json) {
         return new JsonReader().parse(json);
     }
 
     /**
      * Parses the given JSON input using the default {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json stream
      * @return a read context
      */
-    public static ReadContext parse(InputStream json) {
+    public static DocumentContext parse(InputStream json) {
         return new JsonReader().parse(json);
     }
 
     /**
      * Parses the given JSON input using the default {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json file
      * @return a read context
      */
-    public static ReadContext parse(File json) throws IOException {
+    public static DocumentContext parse(File json) throws IOException {
         return new JsonReader().parse(json);
     }
 
     /**
      * Parses the given JSON input using the default {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json url
      * @return a read context
      */
-    public static ReadContext parse(URL json) throws IOException {
+    public static DocumentContext parse(URL json) throws IOException {
         return new JsonReader().parse(json);
     }
 
     /**
      * Parses the given JSON input using the provided {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json input
      * @return a read context
      */
-    public static ReadContext parse(Object json, Configuration configuration) {
+    public static DocumentContext parse(Object json, Configuration configuration) {
         return new JsonReader(configuration).parse(json);
     }
 
     /**
      * Parses the given JSON input using the provided {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json input
      * @return a read context
      */
-    public static ReadContext parse(String json, Configuration configuration) {
+    public static DocumentContext parse(String json, Configuration configuration) {
         return new JsonReader(configuration).parse(json);
     }
 
     /**
      * Parses the given JSON input using the provided {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json input
      * @return a read context
      */
-    public static ReadContext parse(InputStream json, Configuration configuration) {
+    public static DocumentContext parse(InputStream json, Configuration configuration) {
         return new JsonReader(configuration).parse(json);
     }
 
     /**
      * Parses the given JSON input using the provided {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json input
      * @return a read context
      */
-    public static ReadContext parse(File json, Configuration configuration) throws IOException {
+    public static DocumentContext parse(File json, Configuration configuration) throws IOException {
         return new JsonReader(configuration).parse(json);
     }
 
     /**
      * Parses the given JSON input using the provided {@link Configuration} and
-     * returns a {@link ReadContext} for path evaluation
+     * returns a {@link DocumentContext} for path evaluation
      *
      * @param json input
      * @return a read context
      */
-    public static ReadContext parse(URL json, Configuration configuration) throws IOException {
+    public static DocumentContext parse(URL json, Configuration configuration) throws IOException {
         return new JsonReader(configuration).parse(json);
     }
-
-    private List<String> splitPath(String pathSteps) {
-		List<String> result = new ArrayList<String>();
-    	for (String string : pathSteps.split("\\]"))
-			result.add(string.replaceAll("[\\[\\$\\']+", ""));
-		return result;
-	}
-
-    /**
-     * Applies this JsonPath to the provided json document.
-     * Note that the document must be identified as either a List or Map by
-     * the {@link JsonProvider}
-     *
-     * @param jsonObject    a container Object
-     * @param configuration configuration to use
-     * @param Class<T>           expected return type
-     * @return json object without elemens matched by the path
-     */
-    @SuppressWarnings("unchecked")
-	public <T> T removeTyped(Object jsonObject, Configuration configuration, Class<T> returnType) {
-        boolean optSuppressExceptions = configuration.containsOption(Option.SUPPRESS_EXCEPTIONS);
-        Object result = jsonObject;
-        try {
-            EvaluationContext evalContext = path.evaluate(jsonObject, jsonObject, configuration);
-            for (String pathSteps : evalContext.getPathList())
-            	result = remove(result, splitPath(pathSteps));
-        } catch (RuntimeException e){
-            if(!optSuppressExceptions){
-                throw e;
-            }
-        }
-        if(Map.class.isAssignableFrom(returnType))
-        	return (T) result;
-        if(String.class.isAssignableFrom(returnType))
-        	return (T) configuration.jsonProvider().toJson(result);
-        throw new RuntimeException("Unknown returnType: "+returnType.getSimpleName());
-    }
-
-	@SuppressWarnings("unchecked")
-	private <T> T remove(T jsonObject, List<String> pathList) {
-		if(jsonObject instanceof Map) {
-			Map<String, Object> map = (Map<String, Object>) jsonObject;
-			Set<String> keys = new HashSet<String>(map.keySet());
-			for (String key : keys) {
-				if(key.equals(pathList.get(0))) {
-					if(pathList.size() > 1)
-						remove(map.get(key), pathList.subList(1, pathList.size()));
-					else
-						map.remove(key);
-				}
-			}
-			return (T) map;
-		}
-		return jsonObject;
-	}
 }

@@ -25,11 +25,11 @@ public interface ReadContext {
     Configuration configuration();
 
     /**
-     * Returns the JSON model that this context is reading
+     * Returns the JSON model that this context is operating on
      *
      * @return json model
      */
-    Object json();
+    <T> T json();
 
     /**
      * Reads the given path from this context
@@ -72,6 +72,36 @@ public interface ReadContext {
     <T> T read(JsonPath path, Class<T> type);
 
     /**
+     * Reads the given path from this context
+     *
+     * Sample code to create a TypeRef
+     * <code>
+     *       TypeRef ref = new TypeRef<List<Integer>>() {};
+     * </code>
+     *
+     * @param path path to apply
+     * @param typeRef  expected return type (will try to map)
+     * @param <T>
+     * @return result
+     */
+    <T> T read(JsonPath path, TypeRef<T> typeRef);
+
+    /**
+     * Reads the given path from this context
+     *
+     * Sample code to create a TypeRef
+     * <code>
+     *       TypeRef ref = new TypeRef<List<Integer>>() {};
+     * </code>
+     *
+     * @param path path to apply
+     * @param typeRef  expected return type (will try to map)
+     * @param <T>
+     * @return result
+     */
+    <T> T read(String path, TypeRef<T> typeRef);
+
+    /**
      * Stops evaluation when maxResults limit has been reached
      * @param maxResults
      * @return the read context
@@ -87,11 +117,11 @@ public interface ReadContext {
 
     /**
      * Removes the given path from this context
-     *
-     * @param path    path to read
      * @param filters filters
+     * @param path    path to read
+     *
      * @param <T>
      * @return result
      */
-    <T> T remove(String jsonPath, Class<T> returnType, Predicate... filters);
+    <T> T remove(String jsonPath, Predicate... filters);
 }

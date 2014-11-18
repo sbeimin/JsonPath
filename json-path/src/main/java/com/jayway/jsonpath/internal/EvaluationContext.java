@@ -16,6 +16,7 @@ package com.jayway.jsonpath.internal;
 
 import com.jayway.jsonpath.Configuration;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface EvaluationContext {
@@ -42,7 +43,21 @@ public interface EvaluationContext {
      */
     <T> T getValue();
 
+    /**
+     * See {@link com.jayway.jsonpath.internal.EvaluationContext#getValue()}
+     *
+     * @param unwrap tells th underlying json provider if primitives should be unwrapped
+     * @param <T> expected return type
+     * @return evaluation result
+     */
+    <T> T getValue(boolean unwrap);
 
+
+    /**
+     * Returns the list of formalized paths that represent the result of the evaluation
+     * @param <T>
+     * @return list of paths
+     */
     <T> T getPath();
 
 
@@ -52,5 +67,7 @@ public interface EvaluationContext {
      * @return list of path representations
      */
     List<String> getPathList();
+
+    Collection<PathRef> updateOperations();
 
 }

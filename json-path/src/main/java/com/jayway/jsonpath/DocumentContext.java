@@ -12,28 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.jayway.jsonpath.internal.spi.mapper;
+package com.jayway.jsonpath;
 
-import com.jayway.jsonpath.Configuration;
-
-public class StringMapper extends MapperBase {
-
-    public StringMapper() {
-        register(Object.class, String.class);
-    }
-
-    @Override
-    public Object convert(Object src, Class<?> srcType, Class<?> targetType, Configuration conf) {
-        assertValidConversion(src, srcType, targetType);
-
-        if (src == null) {
-            return null;
-        }
-        return src.toString();
-    }
-
-    @Override
-    boolean canConvert(Class<?> srcType, Class<?> targetType){
-        return true;
-    }
+public interface DocumentContext extends ReadContext, WriteContext {
 }

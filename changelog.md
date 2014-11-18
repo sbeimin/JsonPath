@@ -1,11 +1,30 @@
 In The Pipe
 ===========
+
+1.2.0 (2014-11-11)
+==================
 * Added EvaluationListener interface that allows abortion of evaluation if criteria is fulfilled.
   this makes it possible to limit the number of results to fetch when a document is scanned. Also 
   added utility method to limit results `JsonPath.parse(json).limit(1).read("$..title", List.class);`
-* Added support for OR in inline filters [?(@.foo == 'bar' || @.foo == 'baz')] 
+* Added support for OR in inline filters `[?(@.foo == 'bar' || @.foo == 'baz')]` 
 * Upgrade json-smart to 2.1.0
-
+* Support for Update and Delete by path. **breaks JsonProvider SPI**
+  `parse(JSON_DOCUMENT).set("$.store.book[*].display-price", 1)`
+  `parse(JSON_DOCUMENT).put("$.store.book[1]", "new-key", "new-val")`
+  `parse(JSON_DOCUMENT).add("$.store.book", newBook)`
+  `parse(JSON_DOCUMENT).delete("$.store.book[1].display-price")`
+* Support regex in inline filters (ruby syntax)
+  `parse(JSON_DOCUMENT).read("$.store.book[?(@.category =~ /reference/)].author")`
+  `parse(JSON_DOCUMENT).read("$.store.book[?(@.category =~ /REFERENCE/i)].author")`
+* Inline filter does not require path statement on left side of operator  
+  `parse(JSON_DOCUMENT).read("$.store.book[?(@.category == 'reference')].author")`    
+  `parse(JSON_DOCUMENT).read("$.store.book[?('reference' == @.category)].author")`    
+* Negate exist checks in inline filters (not defined or null) 
+  `parse(JSON_DOCUMENT).read("$.store.book[?(!@.isbn)]")`    
+* Improved object mapping with Jackson and Gson (now handles generic types)
+* JacksonJsonNodeJsonProvider supporting path operations on `com.fasterxml.jackson.databind.JsonNode`
+* Exceptions thrown by JsonPath.compile are now wrapped in an InvalidPathException
+* Fixed Deep scanning issue (#60) 
 
 1.1.0 (2014-10-01)
 ==================

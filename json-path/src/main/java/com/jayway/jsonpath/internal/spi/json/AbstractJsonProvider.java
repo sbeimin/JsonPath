@@ -46,8 +46,21 @@ public abstract class AbstractJsonProvider implements JsonProvider {
      * @return the entry at the given index
      */
     public Object getArrayIndex(Object obj, int idx) {
+        return getArrayIndex(obj, idx, true);
+    }
+
+    public Object getArrayIndex(Object obj, int idx, boolean unwrap){
         return ((List) obj).get(idx);
     }
+
+    public void setArrayIndex(Object array, int index, Object newValue) {
+        if (!isArray(array)) {
+            throw new UnsupportedOperationException();
+        } else {
+            ((List) array).set(index, newValue);
+        }
+    }
+
 
     /**
      * Extracts a value from an map
@@ -85,6 +98,25 @@ public abstract class AbstractJsonProvider implements JsonProvider {
                 index = list.size();
             }
             list.add(index, value);
+        }
+    }
+
+
+
+    /**
+     * Removes a value in an object or array
+     *
+     * @param obj   an array or an object
+     * @param key   a String key or a numerical index to remove
+     */
+    @SuppressWarnings("unchecked")
+    public void removeProperty(Object obj, Object key) {
+        if (isMap(obj))
+            ((Map) obj).remove(key.toString());
+        else {
+            List list = (List) obj;
+            int index = key instanceof Integer ? (Integer) key : Integer.parseInt(key.toString());
+            list.remove(index);
         }
     }
 

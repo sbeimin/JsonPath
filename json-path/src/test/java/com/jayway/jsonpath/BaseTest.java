@@ -2,6 +2,7 @@ package com.jayway.jsonpath;
 
 import com.jayway.jsonpath.internal.Path;
 import com.jayway.jsonpath.internal.spi.json.GsonJsonProvider;
+import com.jayway.jsonpath.internal.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.internal.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.internal.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.internal.spi.mapper.JacksonMappingProvider;
@@ -23,12 +24,17 @@ public class BaseTest {
             .jsonProvider(new JacksonJsonProvider())
             .build();
 
+    public static final Configuration JACKSON_JSON_NODE_CONFIGURATION = Configuration
+            .builder()
+            .mappingProvider(new JacksonMappingProvider())
+            .jsonProvider(new JacksonJsonNodeJsonProvider())
+            .build();
+
     public static final Configuration JSON_SMART_CONFIGURATION = Configuration.defaultConfiguration();
 
     public static final String JSON_DOCUMENT = "{\n" +
             "   \"string-property\" : \"string-value\", \n" +
             "   \"int-max-property\" : " + Integer.MAX_VALUE + ", \n" +
-            "   \"long-max-property\" : " + Long.MAX_VALUE + ", \n" +
             "   \"long-max-property\" : " + Long.MAX_VALUE + ", \n" +
             "   \"boolean-property\" : true, \n" +
             "   \"null-property\" : null, \n" +
