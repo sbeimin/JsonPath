@@ -1,0 +1,32 @@
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>json-path-parent</artifactId>
+		<groupId>com.jayway.jsonpath</groupId>
+		<version>1.1.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>json-path-assert</artifactId>
+	<version>1.1.1-SNAPSHOT</version>
+	<name>json-path-assert</name>
+	<url>http://code.google.com/p/json-path/</url>
+	<dependencies>
+		<dependency>
+			<groupId>com.jayway.jsonpath</groupId>
+			<artifactId>json-path</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-library</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<optional>true</optional>
+		</dependency>
+	</dependencies>
+</project>
